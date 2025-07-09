@@ -3,6 +3,7 @@ from aiogram.fsm.state import StatesGroup, State
 class RequestForm(StatesGroup):
     service = State()
     description = State()
+    contact = State()
 
 
 class ExampleForm(StatesGroup):
