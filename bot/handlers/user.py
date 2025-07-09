@@ -13,12 +13,29 @@ db = Database(settings.db_path)
 
 @router.message(CommandStart())
 async def start(msg: types.Message):
+    db.add_user(msg.from_user.id, msg.from_user.username or "")
     text = (
         "\U0001F7E2 Стартовое сообщение:  Привет!  Я — DaniAi 2.0: создаю AI-визуал, стиль и Reels, собранные из нейросетей."\
         "  Ниже можешь посмотреть мои работы и выбрать, как связаться \U0001F447"\
         "\n\n\U0001F4F8 Здесь можно вставить примеры работ — «Highlights»: картинки, видео"
     )
     await msg.answer(text, reply_markup=main_menu)
+
+
+@router.message(F.text == "Мои услуги")
+async def my_services(msg: types.Message):
+    services = db.get_services()
+    if not services:
+        await msg.answer("Пока нет услуг", reply_markup=back_kb)
+        return
+    text = "\n".join(f"• {s[1]}" for s in services)
+    await msg.answer(text, reply_markup=back_kb)
+
+
+@router.message(F.text == "Назад")
+async def back_to_menu(msg: types.Message, state: FSMContext):
+    await state.clear()
+    await msg.answer("Главное меню", reply_markup=main_menu)
 
 @router.message(F.text == "Заполнить анкету")
 async def fill_form(msg: types.Message, state: FSMContext):
