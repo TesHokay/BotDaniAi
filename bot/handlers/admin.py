@@ -10,6 +10,7 @@ from ..keyboards.common import (
     requests_kb,
     request_detail_kb,
     confirm_delete_kb,
+    finish_services_kb,
 )
 from aiogram.fsm.context import FSMContext
 from ..states.forms import ServicesMessageForm, NewsForm
@@ -68,18 +69,34 @@ async def edit_services(msg: types.Message, state: FSMContext):
         return
     await state.set_state(ServicesMessageForm.content)
     await msg.answer(
-        "Отправьте сообщение с описанием услуг. Оно будет пересылаться пользователям.",
-        reply_markup=cancel_kb,
+        "Отправьте одно или несколько сообщений с описанием услуг.\n"
+        "Когда закончите, нажмите 'Готово'.",
+        reply_markup=finish_services_kb,
     )
+
+@router.message(ServicesMessageForm.content, F.text == "Готово")
+async def finalize_services(msg: types.Message, state: FSMContext):
+    if msg.from_user.id != settings.admin_id:
+        return
+    data = await state.get_data()
+    messages = data.get("messages", [])
+    db.save_service_messages(messages)
+    await state.clear()
+    await msg.answer("Сообщения сохранены", reply_markup=admin_menu)
 
 
 @router.message(ServicesMessageForm.content)
-async def save_services_message(msg: types.Message, state: FSMContext):
+async def collect_service_message(msg: types.Message, state: FSMContext):
     if msg.from_user.id != settings.admin_id:
         return
-    db.save_service_message(msg.message_id)
-    await state.clear()
-    await msg.answer("Сообщение сохранено", reply_markup=admin_menu)
+    data = await state.get_data()
+    messages = data.get("messages", [])
+    messages.append(msg.message_id)
+    await state.update_data(messages=messages)
+    await msg.answer(
+        "Добавлено. Пришлите еще или нажмите 'Готово'",
+        reply_markup=finish_services_kb,
+    )
 
 
 @router.message(F.text == "Отправка рассылки")

@@ -14,14 +14,17 @@ db = Database(settings.db_path)
 
 async def send_services(msg: types.Message) -> bool:
     """Send stored services message to the user."""
-    service_id = db.get_service_message()
-    if not service_id:
+    service_ids = db.get_service_messages()
+    if not service_ids:
         return False
-    try:
-        await msg.bot.copy_message(msg.chat.id, settings.admin_id, service_id)
-        return True
-    except Exception:
-        return False
+    ok = False
+    for sid in service_ids:
+        try:
+            await msg.bot.copy_message(msg.chat.id, settings.admin_id, sid)
+            ok = True
+        except Exception:
+            pass
+    return ok
 
 @router.message(CommandStart())
 async def start(msg: types.Message):

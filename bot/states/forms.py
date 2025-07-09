@@ -13,8 +13,7 @@ class ServiceForm(StatesGroup):
 
 
 class ServicesMessageForm(StatesGroup):
-    """State for receiving a single message describing all services."""
+    """State for collecting several messages describing all services."""
     content = State()
-
 
 class NewsForm(StatesGroup):    content = State()

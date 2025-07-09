@@ -128,20 +128,30 @@ class Database:
                 "SELECT id, name, media, caption FROM services"
             ).fetchall()
 
-    def save_service_message(self, message_id: int) -> None:
+    def save_service_messages(self, message_ids: list[int]) -> None:
+        """Store admin service messages to forward to users."""
         with self.conn:
             self.conn.execute("DELETE FROM service_message")
             self.conn.execute(
                 "INSERT INTO service_message (id, message_id) VALUES (1, ?)",
-                (message_id,),
+                ("",),
             )
+            if message_ids:
+                ids_str = ",".join(str(i) for i in message_ids)
+                self.conn.execute(
+                    "UPDATE service_message SET message_id=? WHERE id=1",
+                    (ids_str,),
+                )
 
-    def get_service_message(self) -> int | None:
+    def get_service_messages(self) -> list[int]:
+        """Retrieve stored service message IDs."""
         with self.conn:
             row = self.conn.execute(
                 "SELECT message_id FROM service_message WHERE id = 1"
             ).fetchone()
-            return row[0] if row else None
+            if not row or not row[0]:
+                return []
+            return [int(x) for x in str(row[0]).split(",") if x]
 
     def get_request(self, request_id: int) -> Tuple:
         with self.conn:
@@ -150,5 +160,4 @@ class Database:
                 (request_id,),
             ).fetchone()
 
-    def delete_request(self, request_id: int) -> None:
-        with self.conn:            self.conn.execute("DELETE FROM requests WHERE id=?", (request_id,))
+    def delete_request(self, request_id: int) -> None:        with self.conn:            self.conn.execute("DELETE FROM requests WHERE id=?", (request_id,))
