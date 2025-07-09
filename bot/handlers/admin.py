@@ -19,8 +19,9 @@ router = Router()
 db = Database(settings.db_path)
 
 
-@router.message(ServiceForm.name, F.text == "Отмена")
-@router.message(NewsForm.text, F.text == "Отмена")
+@router.message(ServiceForm.file, F.text == "Отмена")
+@router.message(ServiceForm.caption, F.text == "Отмена")
+@router.message(NewsForm.content, F.text == "Отмена")
 async def cancel_state(msg: types.Message, state: FSMContext):
     if msg.from_user.id != settings.admin_id:
         return
@@ -66,13 +67,24 @@ async def list_requests(msg: types.Message):
 async def add_service(msg: types.Message, state: FSMContext):
     if msg.from_user.id != settings.admin_id:
         return
-    await state.set_state(ServiceForm.name)
-    await msg.answer("Название услуги", reply_markup=cancel_kb)
+    await state.set_state(ServiceForm.file)
+    await msg.answer("Отправьте картинку или видео услуги", reply_markup=cancel_kb)
 
 
-@router.message(ServiceForm.name)
-async def service_name(msg: types.Message, state: FSMContext):
-    db.add_service(msg.text)
+@router.message(ServiceForm.file, F.photo | F.video)
+async def service_file(msg: types.Message, state: FSMContext):
+    fid = msg.photo[-1].file_id if msg.photo else msg.video.file_id
+    kind = "photo" if msg.photo else "video"
+    await state.update_data(media=f"{kind}:{fid}")
+    await state.set_state(ServiceForm.caption)
+    await msg.answer("Добавьте подпись", reply_markup=cancel_kb)
+
+
+@router.message(ServiceForm.caption)
+async def service_caption(msg: types.Message, state: FSMContext):
+    data = await state.get_data()
+    media = data.get("media")
+    db.add_service(media, msg.text or "")
     await state.clear()
     await msg.answer("Услуга добавлена", reply_markup=admin_menu)
 
@@ -81,20 +93,19 @@ async def service_name(msg: types.Message, state: FSMContext):
 async def start_news(msg: types.Message, state: FSMContext):
     if msg.from_user.id != settings.admin_id:
         return
-    await state.set_state(NewsForm.text)
-    await msg.answer("Введите текст рассылки", reply_markup=cancel_kb)
+    await state.set_state(NewsForm.content)
+    await msg.answer("Отправьте сообщение для рассылки", reply_markup=cancel_kb)
 
 
-@router.message(NewsForm.text)
+@router.message(NewsForm.content)
 async def send_news(msg: types.Message, state: FSMContext):
     users = db.get_users()
     for user_id, in users:
         try:
-            await msg.bot.send_message(user_id, msg.text)
+            await msg.bot.copy_message(user_id, msg.chat.id, msg.message_id)
         except Exception:
             pass
-    await state.clear()
-    await msg.answer("Рассылка завершена", reply_markup=admin_menu)
+    await msg.answer("Отправлено. Можете прислать еще или отменить", reply_markup=cancel_kb)
 
 
 

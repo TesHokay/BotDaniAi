@@ -7,8 +7,9 @@ class RequestForm(StatesGroup):
 
 
 class ServiceForm(StatesGroup):
-    name = State()
+    file = State()
+    caption = State()
 
 
 class NewsForm(StatesGroup):
-    text = State()
+    content = State()

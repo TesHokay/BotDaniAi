@@ -18,8 +18,7 @@ async def start(msg: types.Message):
         await msg.answer("Админ меню", reply_markup=admin_menu)
         return
     text = (
-        "Картинка"\
-        "  С помощью меню ниже оставьте заявку или свяжитесь со мной напрямую \U0001F447"\
+        "  С помощью меню ниже оставьте заявку или свяжитесь со мной напрямую 👇"\
     )
     await msg.answer(text, reply_markup=main_menu)
 
@@ -30,8 +29,18 @@ async def my_services(msg: types.Message):
     if not services:
         await msg.answer("Пока нет услуг", reply_markup=back_kb)
         return
-    text = "\n".join(f"• {s[1]}" for s in services)
-    await msg.answer(text, reply_markup=back_kb)
+    for s in services:
+        media = s[2]
+        caption = s[3] or s[1] or ""
+        if media:
+            kind, fid = media.split(":", 1)
+            if kind == "photo":
+                await msg.answer_photo(fid, caption=caption)
+            else:
+                await msg.answer_video(fid, caption=caption)
+        else:
+            await msg.answer(caption)
+    await msg.answer("Нажмите 'Назад' для возврата", reply_markup=back_kb)
 
 
 @router.message(F.text == "Назад")
@@ -42,7 +51,7 @@ async def back_to_menu(msg: types.Message, state: FSMContext):
 @router.message(F.text == "Заполнить анкету")
 async def fill_form(msg: types.Message, state: FSMContext):
     await state.set_state(RequestForm.service)
-    await msg.answer("Какая из моих услуг Вас интересует? (Например: рилс, генерация, telegram-бот, логотип и т.п)", reply_markup=cancel_kb)
+    await msg.answer("Какая из моих услуг Вам интересна? (Например: рилс, генерация, автоматизация, логотип и т.п", reply_markup=cancel_kb)
 
 @router.message(RequestForm.service, F.text == "Отмена")
 @router.message(RequestForm.description, F.text == "Отмена")
@@ -56,10 +65,7 @@ async def process_service(msg: types.Message, state: FSMContext):
     await state.update_data(service=msg.text)
     await state.set_state(RequestForm.description)
     await msg.answer(
-        "Расскажите подробнее, для чего мы это делаем: \
-        — Добавьте ссылку на ваш бренд / магазин / соцсети \
-        — Кратко опишите задачу \
-        — Прикрепите референсы, скриншоты или любые другие материалы",
+        "Расскажите подробнее, для чего мы это делаем:\n— Добавьте ссылку на ваш бренд / магазин / соцсети \n— Кратко опишите задачу \n— При желании прикрепите референсы, скриншоты или любые другие материалы",
         reply_markup=cancel_kb
     )
 
@@ -93,7 +99,7 @@ async def process_contact(msg: types.Message, state: FSMContext):
     )
     await state.clear()
     await msg.answer(
-        "Спасибо большое за заявку! \U0001F64C\nМой ИИ-ассистент всё проанализирует и передаст мне. Обязательно свяжусь с вами в ближайшее время.",
+        "Спасибо большое за заявку! \U0001F64C\nМой ассистент проанализирует и передаст мне. Обязательно свяжусь с вами в ближайшее время.",
         reply_markup=main_menu
     )
     try:
