@@ -6,8 +6,6 @@ from ..keyboards.common import main_menu, cancel_kb, back_kb, admin_menu
 from ..states.forms import RequestForm
 from ..db.dao import Database
 from ..config import settings
-from ..utils import build_collage
-import os
 
 router = Router()
 
@@ -16,28 +14,13 @@ db = Database(settings.db_path)
 
 async def send_services(msg: types.Message) -> bool:
     """Send stored services message to the user."""
-    entries = db.get_service_messages()
-    if not entries:
+    service_ids = db.get_service_messages()
+    if not service_ids:
         return False
     ok = False
-
-    photos = [e for e in entries if e.get("type") == "photo"]
-    others = [e for e in entries if e.get("type") != "photo"]
-
-    if photos:
-        collage = await build_collage(msg.bot, [p["file_id"] for p in photos])
-        await msg.answer_photo(types.FSInputFile(collage))
-        os.remove(collage)
-        ok = True
-
-    for e in others:
+    for sid in service_ids:
         try:
-            if e.get("type") == "text":
-                await msg.answer(e.get("text", ""))
-            elif e.get("type") == "video":
-                await msg.answer_video(e["file_id"], caption=e.get("caption"))
-            elif e.get("type") == "copy":
-                await msg.bot.copy_message(msg.chat.id, settings.admin_id, e["message_id"])
+            await msg.bot.copy_message(msg.chat.id, settings.admin_id, sid)
             ok = True
         except Exception:
             pass
@@ -49,12 +32,8 @@ async def start(msg: types.Message):
     if msg.from_user.id == settings.admin_id:
         await msg.answer("Админ меню", reply_markup=admin_menu)
         return
-    text = (
-        "  С помощью меню ниже оставьте заявку или свяжитесь со мной напрямую 👇"
-    )
-    await msg.answer(text)
     await send_services(msg)
-    await msg.answer("Выберите опцию ниже", reply_markup=main_menu)
+    await msg.answer("Выберите опцию ниже 👇", reply_markup=main_menu)
 
 
 @router.message(F.text == "Мои услуги")
@@ -144,4 +123,5 @@ async def process_contact(msg: types.Message, state: FSMContext):
         pass
 
 @router.message(F.text == "Написать напрямую DaniAi")
-async def contact_direct(msg: types.Message):    await msg.answer("Свяжитесь: @username")
+async def contact_direct(msg: types.Message):
+    await msg.answer("Свяжитесь: @DaniAi_2")

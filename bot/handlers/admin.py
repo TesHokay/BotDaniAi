@@ -91,17 +91,7 @@ async def collect_service_message(msg: types.Message, state: FSMContext):
         return
     data = await state.get_data()
     messages = data.get("messages", [])
-    if msg.photo:
-        entry = {"type": "photo", "file_id": msg.photo[-1].file_id}
-        if msg.caption:
-            entry["caption"] = msg.caption
-    elif msg.video:
-        entry = {"type": "video", "file_id": msg.video.file_id}
-        if msg.caption:
-            entry["caption"] = msg.caption
-    else:
-        entry = {"type": "text", "text": msg.text or msg.caption or ""}
-    messages.append(entry)
+    messages.append(msg.message_id)
     await state.update_data(messages=messages)
     await msg.answer(
         "Добавлено. Пришлите еще или нажмите 'Готово'",
