@@ -17,6 +17,8 @@ async def start(msg: types.Message):
     if msg.from_user.id == settings.admin_id:
         await msg.answer("Админ меню", reply_markup=admin_menu)
         return
+    await msg.answer("С помощью меню ниже оставьте заявку или свяжитесь со мной напрямую")
+    # TODO: отправить несколько фотографий с примерами работ
     text = (
         "\U0001F7E2 Стартовое сообщение:  Привет!  Я — DaniAi 2.0: создаю AI-визуал, стиль и Reels, собранные из нейросетей."\
         "  Ниже можешь посмотреть мои работы и выбрать, как связаться \U0001F447"\
@@ -31,8 +33,18 @@ async def my_services(msg: types.Message):
     if not services:
         await msg.answer("Пока нет услуг", reply_markup=back_kb)
         return
-    text = "\n".join(f"• {s[1]}" for s in services)
-    await msg.answer(text, reply_markup=back_kb)
+    for s in services:
+        media = s[2]
+        caption = s[3] or s[1] or ""
+        if media:
+            kind, fid = media.split(":", 1)
+            if kind == "photo":
+                await msg.answer_photo(fid, caption=caption)
+            else:
+                await msg.answer_video(fid, caption=caption)
+        else:
+            await msg.answer(caption)
+    await msg.answer("Нажмите 'Назад' для возврата", reply_markup=back_kb)
 
 
 @router.message(F.text == "Назад")

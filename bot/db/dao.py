@@ -34,9 +34,16 @@ class Database:
             self.conn.execute(
                 """CREATE TABLE IF NOT EXISTS services (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT
+                        name TEXT,
+                        media TEXT,
+                        caption TEXT
                     )"""
             )
+            cols = [row[1] for row in self.conn.execute("PRAGMA table_info(services)")]
+            if "media" not in cols:
+                self.conn.execute("ALTER TABLE services ADD COLUMN media TEXT")
+            if "caption" not in cols:
+                self.conn.execute("ALTER TABLE services ADD COLUMN caption TEXT")
             self.conn.execute(
                 """CREATE TABLE IF NOT EXISTS examples (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,23 +102,25 @@ class Database:
         with self.conn:
             return self.conn.execute("SELECT id, file_id, caption FROM examples").fetchall()
 
-    def add_service(self, name: str) -> None:
+    def add_service(self, media: str, caption: str) -> None:
         with self.conn:
             self.conn.execute(
-                "INSERT INTO services (name) VALUES (?)",
-                (name,),
+                "INSERT INTO services (media, caption) VALUES (?, ?)",
+                (media, caption),
             )
 
-    def update_service(self, service_id: int, name: str) -> None:
+    def update_service(self, service_id: int, media: str, caption: str) -> None:
         with self.conn:
             self.conn.execute(
-                "UPDATE services SET name=? WHERE id=?",
-                (name, service_id),
+                "UPDATE services SET media=?, caption=? WHERE id=?",
+                (media, caption, service_id),
             )
 
     def get_services(self) -> List[Tuple]:
         with self.conn:
-            return self.conn.execute("SELECT id, name FROM services").fetchall()
+            return self.conn.execute(
+                "SELECT id, name, media, caption FROM services"
+            ).fetchall()
 
     def get_request(self, request_id: int) -> Tuple:
         with self.conn:
