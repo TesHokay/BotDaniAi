@@ -6,11 +6,6 @@ class RequestForm(StatesGroup):
     contact = State()
 
 
-class ExampleForm(StatesGroup):
-    file = State()
-    caption = State()
-
-
 class ServiceForm(StatesGroup):
     name = State()
 

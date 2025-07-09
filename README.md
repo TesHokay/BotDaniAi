@@ -1,6 +1,6 @@
 # DaniAi Telegram Bot
 
-Телеграм‑бот на базе [Aiogram](https://github.com/aiogram/aiogram) для сбора заявок и работы с примерами работ.
+Телеграм‑бот на базе [Aiogram](https://github.com/aiogram/aiogram) для сбора заявок.
 
 ## Запуск
 

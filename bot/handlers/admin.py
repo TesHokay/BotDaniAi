@@ -12,15 +12,13 @@ from ..keyboards.common import (
     confirm_delete_kb,
 )
 from aiogram.fsm.context import FSMContext
-from ..states.forms import ExampleForm, ServiceForm, NewsForm
+from ..states.forms import ServiceForm, NewsForm
 
 router = Router()
 
 db = Database(settings.db_path)
 
 
-@router.message(ExampleForm.file, F.text == "Отмена")
-@router.message(ExampleForm.caption, F.text == "Отмена")
 @router.message(ServiceForm.name, F.text == "Отмена")
 @router.message(NewsForm.text, F.text == "Отмена")
 async def cancel_state(msg: types.Message, state: FSMContext):
@@ -88,28 +86,6 @@ async def send_news(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("Рассылка завершена", reply_markup=admin_menu)
 
-@router.message(F.text == "Добавить пример работы")
-async def add_example(msg: types.Message, state: FSMContext):
-    if msg.from_user.id != settings.admin_id:
-        return
-    await state.set_state(ExampleForm.file)
-    await msg.answer("Отправьте картинку или видео", reply_markup=cancel_kb)
-
-
-@router.message(ExampleForm.file, F.photo | F.video)
-async def example_file(msg: types.Message, state: FSMContext):
-    file_id = msg.photo[-1].file_id if msg.photo else msg.video.file_id
-    await state.update_data(file_id=file_id)
-    await state.set_state(ExampleForm.caption)
-    await msg.answer("Добавьте подпись", reply_markup=cancel_kb)
-
-
-@router.message(ExampleForm.caption, F.text)
-async def example_caption(msg: types.Message, state: FSMContext):
-    data = await state.get_data()
-    db.add_example(data["file_id"], msg.text)
-    await state.clear()
-    await msg.answer("Пример добавлен", reply_markup=admin_menu)
 
 
 @router.callback_query(F.data.startswith("req_"))
