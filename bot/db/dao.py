@@ -18,6 +18,10 @@ class Database:
                         contact TEXT
                     )"""
             )
+            # handle existing databases created without the `contact` column
+            cols = [row[1] for row in self.conn.execute("PRAGMA table_info(requests)")]
+            if "contact" not in cols:
+                self.conn.execute("ALTER TABLE requests ADD COLUMN contact TEXT")
             self.conn.execute(
                 """CREATE TABLE IF NOT EXISTS users (
                         user_id INTEGER PRIMARY KEY,
