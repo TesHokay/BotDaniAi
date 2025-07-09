@@ -2,7 +2,7 @@ from aiogram import Router, types
 from aiogram.filters import CommandStart
 from aiogram import F
 from aiogram.fsm.context import FSMContext
-from ..keyboards.common import main_menu, cancel_kb, back_kb
+from ..keyboards.common import main_menu, cancel_kb, back_kb, admin_menu
 from ..states.forms import RequestForm
 from ..db.dao import Database
 from ..config import settings
@@ -14,6 +14,9 @@ db = Database(settings.db_path)
 @router.message(CommandStart())
 async def start(msg: types.Message):
     db.add_user(msg.from_user.id, msg.from_user.username or "")
+    if msg.from_user.id == settings.admin_id:
+        await msg.answer("Админ меню", reply_markup=admin_menu)
+        return
     text = (
         "\U0001F7E2 Стартовое сообщение:  Привет!  Я — DaniAi 2.0: создаю AI-визуал, стиль и Reels, собранные из нейросетей."\
         "  Ниже можешь посмотреть мои работы и выбрать, как связаться \U0001F447"\
