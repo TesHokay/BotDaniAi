@@ -8,7 +8,10 @@
 
 ```bash
 poetry install
+# Запустить бот можно так:
 poetry run python -m bot
+# либо явно указать модуль main
+poetry run python -m bot.main
 ```
 
 Не забудьте указать переменные окружения `BOT_TOKEN` и `ADMIN_ID`.
