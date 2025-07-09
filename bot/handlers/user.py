@@ -19,8 +19,7 @@ async def start(msg: types.Message):
         return
     text = (
         "\U0001F7E2 Стартовое сообщение:  Привет!  Я — DaniAi 2.0: создаю AI-визуал, стиль и Reels, собранные из нейросетей."\
-        "  Ниже можешь посмотреть мои работы и выбрать, как связаться \U0001F447"\
-        "\n\n\U0001F4F8 Здесь можно вставить примеры работ — «Highlights»: картинки, видео"
+        "  Ниже можешь посмотреть мои услуги и выбрать, как связаться \U0001F447"\
     )
     await msg.answer(text, reply_markup=main_menu)
 
@@ -90,4 +89,4 @@ async def process_contact(msg: types.Message, state: FSMContext):
 
 @router.message(F.text == "Написать напрямую DaniAi")
 async def contact_direct(msg: types.Message):
-    await msg.answer("Свяжитесь: @username")
+    await msg.answer("Свяжитесь: @DaniAi_2")
