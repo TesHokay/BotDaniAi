@@ -46,6 +46,7 @@ async def fill_form(msg: types.Message, state: FSMContext):
 
 @router.message(RequestForm.service, F.text == "Отмена")
 @router.message(RequestForm.description, F.text == "Отмена")
+@router.message(RequestForm.contact, F.text == "Отмена")
 async def cancel_form(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("Действие отменено", reply_markup=main_menu)
@@ -61,15 +62,30 @@ async def process_service(msg: types.Message, state: FSMContext):
 
 @router.message(RequestForm.description)
 async def process_description(msg: types.Message, state: FSMContext):
+    await state.update_data(description=msg.text)
+    await state.set_state(RequestForm.contact)
+    await msg.answer("Оставьте контактные данные для связи", reply_markup=cancel_kb)
+
+
+@router.message(RequestForm.contact)
+async def process_contact(msg: types.Message, state: FSMContext):
     data = await state.get_data()
     service = data.get("service")
-    description = msg.text
-    db.add_request(msg.from_user.id, msg.from_user.username or "", service, description)
+    description = data.get("description")
+    contact = msg.text
+    db.add_request(msg.from_user.id, msg.from_user.username or "", service, description, contact)
     await state.clear()
     await msg.answer(
         "Спасибо большое за заявку! \U0001F64C\nМой ассистент всё обработает и передаст мне. Я всё проанализирую и свяжусь с вами в ближайшее время.",
         reply_markup=main_menu
     )
+    try:
+        await msg.bot.send_message(
+            settings.admin_id,
+            f"Новая заявка #{msg.from_user.id}\nПользователь: {msg.from_user.username or msg.from_user.id}\nУслуга: {service}\nОписание: {description}\nКонтакты: {contact}",
+        )
+    except Exception:
+        pass
 
 @router.message(F.text == "Написать напрямую DaniAi")
 async def contact_direct(msg: types.Message):

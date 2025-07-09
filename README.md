@@ -1,6 +1,6 @@
 # DaniAi Telegram Bot
 
-Телеграм‑бот на базе [Aiogram](https://github.com/aiogram/aiogram) для сбора заявок и работы с примерами работ.
+Телеграм‑бот на базе [Aiogram](https://github.com/aiogram/aiogram) для сбора заявок.
 
 ## Запуск
 
@@ -16,3 +16,4 @@ poetry run python -m bot.main
 
 Не забудьте указать переменные окружения `BOT_TOKEN` и `ADMIN_ID`.
 Если `ADMIN_ID` совпадает с ID пользователя, то при команде `/start` он увидит админское меню.
+
