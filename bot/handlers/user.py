@@ -18,9 +18,8 @@ async def start(msg: types.Message):
         await msg.answer("Админ меню", reply_markup=admin_menu)
         return
     text = (
-        "\U0001F7E2 Стартовое сообщение:  Привет!  Я — DaniAi 2.0: создаю AI-визуал, стиль и Reels, собранные из нейросетей."\
-        "  Ниже можешь посмотреть мои работы и выбрать, как связаться \U0001F447"\
-        "\n\n\U0001F4F8 Здесь можно вставить примеры работ — «Highlights»: картинки, видео"
+        "Картинка"\
+        "  С помощью меню ниже оставьте заявку или свяжитесь со мной напрямую \U0001F447"\
     )
     await msg.answer(text, reply_markup=main_menu)
 
@@ -43,7 +42,7 @@ async def back_to_menu(msg: types.Message, state: FSMContext):
 @router.message(F.text == "Заполнить анкету")
 async def fill_form(msg: types.Message, state: FSMContext):
     await state.set_state(RequestForm.service)
-    await msg.answer("Какую услугу вы хотите?", reply_markup=cancel_kb)
+    await msg.answer("Какая из моих услуг Вас интересует? (Например: рилс, генерация, telegram-бот, логотип и т.п)", reply_markup=cancel_kb)
 
 @router.message(RequestForm.service, F.text == "Отмена")
 @router.message(RequestForm.description, F.text == "Отмена")
@@ -57,7 +56,10 @@ async def process_service(msg: types.Message, state: FSMContext):
     await state.update_data(service=msg.text)
     await state.set_state(RequestForm.description)
     await msg.answer(
-        "Скиньте, для чего мы это делаем: — ссылка на ваш бренд / магазин / соцсети — описание задачи — референсы, скриншоты, любые медиа (по желанию)",
+        "Расскажите подробнее, для чего мы это делаем: \
+        — Добавьте ссылку на ваш бренд / магазин / соцсети \
+        — Кратко опишите задачу \
+        — Прикрепите референсы, скриншоты или любые другие материалы",
         reply_markup=cancel_kb
     )
 
@@ -91,7 +93,7 @@ async def process_contact(msg: types.Message, state: FSMContext):
     )
     await state.clear()
     await msg.answer(
-        "Спасибо большое за заявку! \U0001F64C\nМой ассистент всё обработает и передаст мне. Я всё проанализирую и свяжусь с вами в ближайшее время.",
+        "Спасибо большое за заявку! \U0001F64C\nМой ИИ-ассистент всё проанализирует и передаст мне. Обязательно свяжусь с вами в ближайшее время.",
         reply_markup=main_menu
     )
     try:
