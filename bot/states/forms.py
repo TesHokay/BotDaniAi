@@ -7,9 +7,14 @@ class RequestForm(StatesGroup):
 
 
 class ServiceForm(StatesGroup):
+    """Legacy form for adding separate service entries."""
     file = State()
     caption = State()
 
 
-class NewsForm(StatesGroup):
+class ServicesMessageForm(StatesGroup):
+    """State for receiving a single message describing all services."""
     content = State()
+
+
+class NewsForm(StatesGroup):    content = State()

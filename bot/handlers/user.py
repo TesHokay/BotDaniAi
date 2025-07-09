@@ -11,6 +11,18 @@ router = Router()
 
 db = Database(settings.db_path)
 
+
+async def send_services(msg: types.Message) -> bool:
+    """Send stored services message to the user."""
+    service_id = db.get_service_message()
+    if not service_id:
+        return False
+    try:
+        await msg.bot.copy_message(msg.chat.id, settings.admin_id, service_id)
+        return True
+    except Exception:
+        return False
+
 @router.message(CommandStart())
 async def start(msg: types.Message):
     db.add_user(msg.from_user.id, msg.from_user.username or "")
@@ -18,28 +30,18 @@ async def start(msg: types.Message):
         await msg.answer("Админ меню", reply_markup=admin_menu)
         return
     text = (
-        "  С помощью меню ниже оставьте заявку или свяжитесь со мной напрямую 👇"\
+        "  С помощью меню ниже оставьте заявку или свяжитесь со мной напрямую 👇"
     )
-    await msg.answer(text, reply_markup=main_menu)
+    await msg.answer(text)
+    await send_services(msg)
+    await msg.answer("Выберите опцию ниже", reply_markup=main_menu)
 
 
 @router.message(F.text == "Мои услуги")
 async def my_services(msg: types.Message):
-    services = db.get_services()
-    if not services:
-        await msg.answer("Пока нет услуг", reply_markup=back_kb)
-        return
-    for s in services:
-        media = s[2]
-        caption = s[3] or s[1] or ""
-        if media:
-            kind, fid = media.split(":", 1)
-            if kind == "photo":
-                await msg.answer_photo(fid, caption=caption)
-            else:
-                await msg.answer_video(fid, caption=caption)
-        else:
-            await msg.answer(caption)
+    sent = await send_services(msg)
+    if not sent:
+        await msg.answer("Пока нет услуг")
     await msg.answer("Нажмите 'Назад' для возврата", reply_markup=back_kb)
 
 

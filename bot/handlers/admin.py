@@ -12,15 +12,14 @@ from ..keyboards.common import (
     confirm_delete_kb,
 )
 from aiogram.fsm.context import FSMContext
-from ..states.forms import ServiceForm, NewsForm
+from ..states.forms import ServicesMessageForm, NewsForm
 
 router = Router()
 
 db = Database(settings.db_path)
 
 
-@router.message(ServiceForm.file, F.text == "Отмена")
-@router.message(ServiceForm.caption, F.text == "Отмена")
+@router.message(ServicesMessageForm.content, F.text == "Отмена")
 @router.message(NewsForm.content, F.text == "Отмена")
 async def cancel_state(msg: types.Message, state: FSMContext):
     if msg.from_user.id != settings.admin_id:
@@ -64,29 +63,23 @@ async def list_requests(msg: types.Message):
 
 
 @router.message(F.text == "Редактировать услуги")
-async def add_service(msg: types.Message, state: FSMContext):
+async def edit_services(msg: types.Message, state: FSMContext):
     if msg.from_user.id != settings.admin_id:
         return
-    await state.set_state(ServiceForm.file)
-    await msg.answer("Отправьте картинку или видео услуги", reply_markup=cancel_kb)
+    await state.set_state(ServicesMessageForm.content)
+    await msg.answer(
+        "Отправьте сообщение с описанием услуг. Оно будет пересылаться пользователям.",
+        reply_markup=cancel_kb,
+    )
 
 
-@router.message(ServiceForm.file, F.photo | F.video)
-async def service_file(msg: types.Message, state: FSMContext):
-    fid = msg.photo[-1].file_id if msg.photo else msg.video.file_id
-    kind = "photo" if msg.photo else "video"
-    await state.update_data(media=f"{kind}:{fid}")
-    await state.set_state(ServiceForm.caption)
-    await msg.answer("Добавьте подпись", reply_markup=cancel_kb)
-
-
-@router.message(ServiceForm.caption)
-async def service_caption(msg: types.Message, state: FSMContext):
-    data = await state.get_data()
-    media = data.get("media")
-    db.add_service(media, msg.text or "")
+@router.message(ServicesMessageForm.content)
+async def save_services_message(msg: types.Message, state: FSMContext):
+    if msg.from_user.id != settings.admin_id:
+        return
+    db.save_service_message(msg.message_id)
     await state.clear()
-    await msg.answer("Услуга добавлена", reply_markup=admin_menu)
+    await msg.answer("Сообщение сохранено", reply_markup=admin_menu)
 
 
 @router.message(F.text == "Отправка рассылки")
