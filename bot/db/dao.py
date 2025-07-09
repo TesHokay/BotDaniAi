@@ -15,13 +15,16 @@ class Database:
                         username TEXT,
                         service TEXT,
                         description TEXT,
-                        contact TEXT
+                        contact TEXT,
+                        media TEXT
                     )"""
             )
             # handle existing databases created without the `contact` column
             cols = [row[1] for row in self.conn.execute("PRAGMA table_info(requests)")]
             if "contact" not in cols:
                 self.conn.execute("ALTER TABLE requests ADD COLUMN contact TEXT")
+            if "media" not in cols:
+                self.conn.execute("ALTER TABLE requests ADD COLUMN media TEXT")
             self.conn.execute(
                 """CREATE TABLE IF NOT EXISTS users (
                         user_id INTEGER PRIMARY KEY,
@@ -42,16 +45,26 @@ class Database:
                     )"""
             )
 
-    def add_request(self, user_id: int, username: str, service: str, description: str, contact: str) -> None:
+    def add_request(
+        self,
+        user_id: int,
+        username: str,
+        service: str,
+        description: str,
+        contact: str,
+        media: str | None = None,
+    ) -> None:
         with self.conn:
             self.conn.execute(
-                "INSERT INTO requests (user_id, username, service, description, contact) VALUES (?, ?, ?, ?, ?)",
-                (user_id, username, service, description, contact)
+                "INSERT INTO requests (user_id, username, service, description, contact, media) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, username, service, description, contact, media),
             )
 
     def get_requests(self) -> List[Tuple]:
         with self.conn:
-            return self.conn.execute("SELECT id, user_id, username, service, description, contact FROM requests").fetchall()
+            return self.conn.execute(
+                "SELECT id, user_id, username, service, description, contact, media FROM requests"
+            ).fetchall()
 
     def add_user(self, user_id: int, username: str) -> None:
         with self.conn:
@@ -103,7 +116,7 @@ class Database:
     def get_request(self, request_id: int) -> Tuple:
         with self.conn:
             return self.conn.execute(
-                "SELECT id, user_id, username, service, description, contact FROM requests WHERE id=?",
+                "SELECT id, user_id, username, service, description, contact, media FROM requests WHERE id=?",
                 (request_id,),
             ).fetchone()
 

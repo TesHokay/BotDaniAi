@@ -41,6 +41,16 @@ async def admin_back(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("Главное меню", reply_markup=main_menu)
 
+
+@router.callback_query(F.data == "admin_back")
+async def admin_back_cb(call: types.CallbackQuery, state: FSMContext):
+    if call.from_user.id != settings.admin_id:
+        await call.answer()
+        return
+    await state.clear()
+    await call.message.delete()
+    await call.message.answer("Админ меню", reply_markup=admin_menu)
+
 @router.message(F.text == "Список заявок")
 async def list_requests(msg: types.Message):
     if msg.from_user.id != settings.admin_id:
@@ -105,7 +115,16 @@ async def show_request(call: types.CallbackQuery):
         f"Desc: {req[4]}\n"
         f"Contact: {req[5]}"
     )
-    await call.message.edit_text(text, reply_markup=request_detail_kb(req_id))
+    media = req[6]
+    await call.message.delete()
+    if media:
+        kind, file_id = media.split(":", 1)
+        if kind == "photo":
+            await call.message.answer_photo(file_id, caption=text, reply_markup=request_detail_kb(req_id))
+        else:
+            await call.message.answer_video(file_id, caption=text, reply_markup=request_detail_kb(req_id))
+    else:
+        await call.message.answer(text, reply_markup=request_detail_kb(req_id))
 
 
 @router.callback_query(F.data.startswith("back_requests"))
@@ -114,10 +133,11 @@ async def back_requests(call: types.CallbackQuery):
         await call.answer()
         return
     entries = db.get_requests()
+    await call.message.delete()
     if not entries:
-        await call.message.edit_text("Заявок нет", reply_markup=admin_menu)
+        await call.message.answer("Заявок нет", reply_markup=admin_menu)
         return
-    await call.message.edit_text("Заявки:", reply_markup=requests_kb(entries))
+    await call.message.answer("Заявки:", reply_markup=requests_kb(entries))
 
 
 @router.callback_query(F.data.startswith("del_"))
@@ -136,4 +156,5 @@ async def del_request(call: types.CallbackQuery):
         return
     req_id = int(call.data.split("_", 1)[1])
     db.delete_request(req_id)
-    await call.message.edit_text("Заявка удалена", reply_markup=admin_menu)
+    await call.message.delete()
+    await call.message.answer("Заявка удалена", reply_markup=admin_menu)
