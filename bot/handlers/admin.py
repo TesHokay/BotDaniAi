@@ -2,17 +2,23 @@ from aiogram import Router, types
 from aiogram import F
 from ..db.dao import Database
 from ..config import settings
-from ..keyboards.common import admin_menu, main_menu, cancel_kb, back_kb
+from ..keyboards.common import (
+    admin_menu,
+    main_menu,
+    cancel_kb,
+    back_kb,
+    requests_kb,
+    request_detail_kb,
+    confirm_delete_kb,
+)
 from aiogram.fsm.context import FSMContext
-from ..states.forms import ExampleForm, ServiceForm, NewsForm
+from ..states.forms import ServiceForm, NewsForm
 
 router = Router()
 
 db = Database(settings.db_path)
 
 
-@router.message(ExampleForm.file, F.text == "Отмена")
-@router.message(ExampleForm.caption, F.text == "Отмена")
 @router.message(ServiceForm.name, F.text == "Отмена")
 @router.message(NewsForm.text, F.text == "Отмена")
 async def cancel_state(msg: types.Message, state: FSMContext):
@@ -43,11 +49,10 @@ async def list_requests(msg: types.Message):
     if not entries:
         await msg.answer("Заявок нет", reply_markup=admin_menu)
         return
-    text = "\n".join(f"#{e[0]} | {e[2]} | {e[3]}\n{e[4]}" for e in entries)
-    await msg.answer(text, reply_markup=admin_menu)
+    await msg.answer("Заявки:", reply_markup=requests_kb(entries))
 
 
-@router.message(F.text == "Добавить услугу")
+@router.message(F.text == "Редактировать услуги")
 async def add_service(msg: types.Message, state: FSMContext):
     if msg.from_user.id != settings.admin_id:
         return
@@ -62,7 +67,7 @@ async def service_name(msg: types.Message, state: FSMContext):
     await msg.answer("Услуга добавлена", reply_markup=admin_menu)
 
 
-@router.message(F.text == "Рассылка новости")
+@router.message(F.text == "Отправка рассылки")
 async def start_news(msg: types.Message, state: FSMContext):
     if msg.from_user.id != settings.admin_id:
         return
@@ -81,25 +86,54 @@ async def send_news(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("Рассылка завершена", reply_markup=admin_menu)
 
-@router.message(F.text == "Добавить пример работы")
-async def add_example(msg: types.Message, state: FSMContext):
-    if msg.from_user.id != settings.admin_id:
+
+
+@router.callback_query(F.data.startswith("req_"))
+async def show_request(call: types.CallbackQuery):
+    if call.from_user.id != settings.admin_id:
+        await call.answer()
         return
-    await state.set_state(ExampleForm.file)
-    await msg.answer("Отправьте картинку или видео", reply_markup=cancel_kb)
+    req_id = int(call.data.split("_", 1)[1])
+    req = db.get_request(req_id)
+    if not req:
+        await call.message.edit_text("Заявка не найдена", reply_markup=admin_menu)
+        return
+    text = (
+        f"Заявка #{req[0]}\n"
+        f"User: {req[2]}\n"
+        f"Service: {req[3]}\n"
+        f"Desc: {req[4]}\n"
+        f"Contact: {req[5]}"
+    )
+    await call.message.edit_text(text, reply_markup=request_detail_kb(req_id))
 
 
-@router.message(ExampleForm.file, F.photo | F.video)
-async def example_file(msg: types.Message, state: FSMContext):
-    file_id = msg.photo[-1].file_id if msg.photo else msg.video.file_id
-    await state.update_data(file_id=file_id)
-    await state.set_state(ExampleForm.caption)
-    await msg.answer("Добавьте подпись", reply_markup=cancel_kb)
+@router.callback_query(F.data.startswith("back_requests"))
+async def back_requests(call: types.CallbackQuery):
+    if call.from_user.id != settings.admin_id:
+        await call.answer()
+        return
+    entries = db.get_requests()
+    if not entries:
+        await call.message.edit_text("Заявок нет", reply_markup=admin_menu)
+        return
+    await call.message.edit_text("Заявки:", reply_markup=requests_kb(entries))
 
 
-@router.message(ExampleForm.caption, F.text)
-async def example_caption(msg: types.Message, state: FSMContext):
-    data = await state.get_data()
-    db.add_example(data["file_id"], msg.text)
-    await state.clear()
-    await msg.answer("Пример добавлен", reply_markup=admin_menu)
+@router.callback_query(F.data.startswith("del_"))
+async def del_request_prompt(call: types.CallbackQuery):
+    if call.from_user.id != settings.admin_id:
+        await call.answer()
+        return
+    req_id = int(call.data.split("_", 1)[1])
+    await call.message.edit_reply_markup(reply_markup=confirm_delete_kb(req_id))
+
+
+@router.callback_query(F.data.startswith("delc_"))
+async def del_request(call: types.CallbackQuery):
+    if call.from_user.id != settings.admin_id:
+        await call.answer()
+        return
+    req_id = int(call.data.split("_", 1)[1])
+    db.delete_request(req_id)
+    await call.message.edit_text("Заявка удалена", reply_markup=admin_menu)
