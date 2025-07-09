@@ -13,6 +13,11 @@ cancel_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text="Отмена")]
 ], resize_keyboard=True)
 
+finish_services_kb = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text="Готово")],
+    [KeyboardButton(text="Отмена")],
+], resize_keyboard=True)
+
 back_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text="Назад")]
 ], resize_keyboard=True)
