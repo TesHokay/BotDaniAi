@@ -51,6 +51,12 @@ class Database:
                         caption TEXT
                     )"""
             )
+            self.conn.execute(
+                """CREATE TABLE IF NOT EXISTS service_message (
+                        id INTEGER PRIMARY KEY CHECK (id = 1),
+                        message_id INTEGER
+                    )"""
+            )
 
     def add_request(
         self,
@@ -122,6 +128,21 @@ class Database:
                 "SELECT id, name, media, caption FROM services"
             ).fetchall()
 
+    def save_service_message(self, message_id: int) -> None:
+        with self.conn:
+            self.conn.execute("DELETE FROM service_message")
+            self.conn.execute(
+                "INSERT INTO service_message (id, message_id) VALUES (1, ?)",
+                (message_id,),
+            )
+
+    def get_service_message(self) -> int | None:
+        with self.conn:
+            row = self.conn.execute(
+                "SELECT message_id FROM service_message WHERE id = 1"
+            ).fetchone()
+            return row[0] if row else None
+
     def get_request(self, request_id: int) -> Tuple:
         with self.conn:
             return self.conn.execute(
@@ -130,5 +151,4 @@ class Database:
             ).fetchone()
 
     def delete_request(self, request_id: int) -> None:
-        with self.conn:
-            self.conn.execute("DELETE FROM requests WHERE id=?", (request_id,))
+        with self.conn:            self.conn.execute("DELETE FROM requests WHERE id=?", (request_id,))
